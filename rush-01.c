@@ -1,43 +1,63 @@
 #include <stdio.h>
-#include <stdbool.h>
 #include <stdlib.h>
+//#include <unistd.h>
 
 #define SIZE 4
 
-// دالة للتحقق من صحة الصف
-bool is_valid_row(int** grid, int row)
+// دالة لتحويل سلسلة نصية إلى عدد صحيح
+int my_atoi(const char* str)
 {
-    bool seen[SIZE + 1] = { false };
+    int num = 0;
+    int i = 0;
+    while (str[i] != '\0')
+    {
+        if (str[i] >= '0' && str[i] <= '9')
+        {
+            num = num * 10 + (str[i] - '0');
+        }
+        else
+        {
+            return -1; // إذا كانت السلسلة تحتوي على حرف غير رقمي
+        }
+        i++;
+    }
+    return num;
+}
+
+// دالة للتحقق من صحة الصف
+int is_valid_row(int** grid, int row)
+{
+    int seen[SIZE + 1] = { 0 };
     int col = 0;
     while (col < SIZE)
     {
         int num = grid[row][col];
-        if (seen[num])
-            return false;
-        seen[num] = true;
+        if (num < 1 || num > SIZE || seen[num])
+            return 0;
+        seen[num] = 1;
         col++;
     }
-    return true;
+    return 1;
 }
 
 // دالة للتحقق من صحة العمود
-bool is_valid_col(int** grid, int col)
+int is_valid_col(int** grid, int col)
 {
-    bool seen[SIZE + 1] = { false };
+    int seen[SIZE + 1] = { 0 };
     int row = 0;
     while (row < SIZE)
     {
         int num = grid[row][col];
-        if (seen[num])
-            return false;
-        seen[num] = true;
+        if (num < 1 || num > SIZE || seen[num])
+            return 0;
+        seen[num] = 1;
         row++;
     }
-    return true;
+    return 1;
 }
 
 // دالة للتحقق من الرؤية من اتجاه معين
-bool is_visible(int** grid, int index, int hint, bool row_mode, bool reverse)
+int is_visible(int** grid, int index, int hint, int row_mode, int reverse)
 {
     int max_height = 0, visible_count = 0;
     int i = 0;
@@ -56,97 +76,89 @@ bool is_visible(int** grid, int index, int hint, bool row_mode, bool reverse)
 }
 
 // دالة للتحقق من صحة الشبكة بالكامل
-bool is_valid_grid(int** grid, int top_hints[SIZE], int bottom_hints[SIZE], int left_hints[SIZE], int right_hints[SIZE])
+int is_valid_grid(int** grid, int top_hints[SIZE], int bottom_hints[SIZE], int left_hints[SIZE], int right_hints[SIZE])
 {
     int i = 0;
     while (i < SIZE)
     {
         if (!is_valid_row(grid, i) || !is_valid_col(grid, i))
-            return false;
-        if (!is_visible(grid, i, left_hints[i], true, false) ||
-            !is_visible(grid, i, right_hints[i], true, true) ||
-            !is_visible(grid, i, top_hints[i], false, false) ||
-            !is_visible(grid, i, bottom_hints[i], false, true))
-            return false;
+            return 0;
+        if (!is_visible(grid, i, left_hints[i], 1, 0) ||
+            !is_visible(grid, i, right_hints[i], 1, 1) ||
+            !is_visible(grid, i, top_hints[i], 0, 0) ||
+            !is_visible(grid, i, bottom_hints[i], 0, 1))
+            return 0;
         i++;
     }
-    return true;
+    return 1;
 }
 
-// دالة لطباعة الشبكة مع التلميحات
-void print_skyscrapers_grid(int** grid, int top_hints[SIZE], int bottom_hints[SIZE], int left_hints[SIZE], int right_hints[SIZE])
+// دالة لطباعة الشبكة فقط بدون التلميحات
+void print_grid(int** grid)
 {
     int i = 0, j;
-    char buffer[32];
+    char num_str[4];
 
-    // طباعة التلميحات العلوية للأعمدة
-    write(1, "  ", 2); // المسافة لمحاذاة التلميحات
-    j = 0;
-    while (j < SIZE)
-    {
-        snprintf(buffer, sizeof(buffer), " %d ", top_hints[j]);
-        write(1, buffer, 3);
-        j++;
-    }
-    write(1, "\n", 1);
-
-    // طباعة الجزء العلوي من الجدول
-    write(1, "  ", 2);
-    for (j = 0; j < SIZE; j++)
-    {
-        write(1, "---", 3);
-    }
-    write(1, "\n", 1);
-
-    // طباعة الجدول مع التلميحات
+    // طباعة الجدول بدون التلميحات
     i = 0;
     while (i < SIZE)
     {
-        snprintf(buffer, sizeof(buffer), "%d|", left_hints[i]);
-        write(1, buffer, 2);
-
         j = 0;
         while (j < SIZE)
         {
-            if (grid[i][j] == -842150451)
-            {
-                write(1, " _ ", 3); // خلية فارغة
-            }
-            else
-            {
-                snprintf(buffer, sizeof(buffer), " %d ", grid[i][j]);
-                write(1, buffer, 3); // طباعة الرقم
-            }
+            snprintf(num_str, sizeof(num_str), " %d", grid[i][j]);
+            write(1, num_str, 2); // طباعة الرقم
             j++;
         }
-
-        snprintf(buffer, sizeof(buffer), "|%d\n", right_hints[i]);
-        write(1, buffer, 3);
+        write(1, "\n", 1); // إنهاء الصف
         i++;
     }
-
-    // طباعة خط القاعدة
-    write(1, "  ", 2);
-    for (j = 0; j < SIZE; j++)
-    {
-        write(1, "---", 3);
-    }
-    write(1, "\n", 1);
-
-    // طباعة التلميحات السفلية للأعمدة
-    write(1, "  ", 2); // الفراغات اللازمة لمحاذاة التلميحات
-    j = 0;
-    while (j < SIZE)
-    {
-        snprintf(buffer, sizeof(buffer), " %d ", bottom_hints[j]);
-        write(1, buffer, 3); // طباعة التلميحات للأعمدة
-        j++;
-    }
-    write(1, "\n", 1);
 }
 
-int main()
+// دالة للتحقق من إمكانية وضع الرقم في الموقع المحدد
+int can_place_number(int** grid, int row, int col, int num)
 {
+    int i = 0;
+    while (i < SIZE)
+    {
+        if (grid[row][i] == num || grid[i][col] == num)
+            return 0;
+        i++;
+    }
+    return 1;
+}
+
+// دالة لحل اللغز باستخدام طريقة البحث عن الحلول الممكنة
+int solve(int** grid, int top_hints[SIZE], int bottom_hints[SIZE], int left_hints[SIZE], int right_hints[SIZE], int row, int col)
+{
+    if (row == SIZE)
+        return is_valid_grid(grid, top_hints, bottom_hints, left_hints, right_hints);
+
+    if (col == SIZE)
+        return solve(grid, top_hints, bottom_hints, left_hints, right_hints, row + 1, 0);
+
+    int num = 1;
+    while (num <= SIZE)
+    {
+        if (can_place_number(grid, row, col, num))
+        {
+            grid[row][col] = num;
+            if (solve(grid, top_hints, bottom_hints, left_hints, right_hints, row, col + 1))
+                return 1;
+            grid[row][col] = 0;
+        }
+        num++;
+    }
+    return 0;
+}
+
+int main(int argc, char* argv[])
+{
+    if (argc != 4 * SIZE + 1) {
+        write(1, "Error\n", 6);
+        return 1;
+    }
+
     // حجز ذاكرة للشبكة باستخدام malloc
     int** grid = (int**)malloc(SIZE * sizeof(int*));
     int i = 0;
@@ -156,46 +168,37 @@ int main()
         int j = 0;
         while (j < SIZE)
         {
-            grid[i][j] = -842150451; // قيمة ابتدائية لخلايا الجدول
+            grid[i][j] = 0; // قيمة ابتدائية لخلايا الجدول
             j++;
         }
         i++;
     }
 
-    // تعريف التلميحات
-    int top_hints[SIZE] = { 4, 3, 2, 1 };
-    int bottom_hints[SIZE] = { 1, 2, 2, 2 };
-    int left_hints[SIZE] = { 4, 3, 2, 1 };
-    int right_hints[SIZE] = { 1, 2, 2, 2 };
+    // تعريف التلميحات وقراءة التلميحات من argv باستخدام my_atoi
+    int top_hints[SIZE];
+    int bottom_hints[SIZE];
+    int left_hints[SIZE];
+    int right_hints[SIZE];
 
-    // طباعة الشبكة الأولية مع التلميحات
-    print_skyscrapers_grid(grid, top_hints, bottom_hints, left_hints, right_hints);
-
-    // قراءة الأرقام من المستخدم
-    write(1, "Enter the values 4x4:\n", 23);
     i = 0;
     while (i < SIZE)
     {
-        int j = 0;
-        while (j < SIZE)
-        {
-            scanf_s("%d", &grid[i][j]);
-            j++;
-        }
+        top_hints[i] = my_atoi(argv[1 + i]);
+        bottom_hints[i] = my_atoi(argv[1 + SIZE + i]);
+        left_hints[i] = my_atoi(argv[1 + 2 * SIZE + i]);
+        right_hints[i] = my_atoi(argv[1 + 3 * SIZE + i]);
         i++;
     }
 
-    // طباعة الشبكة بعد إدخال الأرقام مع التلميحات
-    print_skyscrapers_grid(grid, top_hints, bottom_hints, left_hints, right_hints);
-
-    // التحقق من صحة الحل
-    if (is_valid_grid(grid, top_hints, bottom_hints, left_hints, right_hints))
+    // حل اللغز
+    if (solve(grid, top_hints, bottom_hints, left_hints, right_hints, 0, 0))
     {
-        write(1, "correct!\n", 9);
+        // طباعة الشبكة بعد إيجاد الحل
+        print_grid(grid);
     }
     else
     {
-        write(1, "no correct!\n", 12);
+        write(1, "Error\n", 6);
     }
 
     // الإفراج عن الذاكرة المخصصة
